@@ -139,6 +139,61 @@ def save_json(
         json.dump(data, file_handle, indent=2, ensure_ascii=False)
 
 
+def resolve_db_path(
+    path: str | Path | None,
+) -> str | None:
+    """Resolve a database-relative path to a filesystem path string.
+
+    Parameters
+    ----------
+    path : str or Path or None
+        Path relative to the database directory, or direct file path.
+
+    Returns
+    -------
+    str or None
+        Filesystem path string if the file exists, or None.
+    """
+    if not path:
+        return None
+    raw_path = Path(path)
+    db_candidate = DATABASE_DIR / raw_path
+    if db_candidate.is_file():
+        return str(db_candidate)
+    if raw_path.is_file():
+        return str(raw_path)
+    return None
+
+
+def to_db_relative_path(
+    path: str | Path | None,
+) -> str:
+    """Convert a file path to a relative path from the database root.
+
+    Parameters
+    ----------
+    path : str or Path or None
+        File path to convert.
+
+    Returns
+    -------
+    str
+        Path string relative to the database directory, or empty string.
+    """
+    if not path:
+        return ""
+    raw_path = Path(path)
+    if (DATABASE_DIR / raw_path).is_file():
+        return raw_path.as_posix()
+
+    base_dir = DATABASE_DIR.resolve()
+    resolved_path = raw_path.resolve()
+    try:
+        return resolved_path.relative_to(base_dir).as_posix()
+    except ValueError:
+        return raw_path.as_posix()
+
+
 def get_reference_choices() -> list[str]:
     """Retrieve sorted list of reference labels from JSON and directory.
 
@@ -331,12 +386,11 @@ def select_reference(
     ref_images = ref.get("images", [])
     image_path: str | None = None
     if isinstance(ref_images, list) and ref_images:
-        first_img = ref_images[0]
-        if first_img and Path(first_img).is_file():
-            image_path = first_img
-    elif ref.get("image") and Path(ref["image"]).is_file():
-        image_path = ref["image"]
-    elif (REFERENCES_DIR / f"{label}.jpg").is_file():
+        image_path = resolve_db_path(ref_images[0])
+    elif ref.get("image"):
+        image_path = resolve_db_path(ref["image"])
+
+    if not image_path and (REFERENCES_DIR / f"{label}.jpg").is_file():
         image_path = str(REFERENCES_DIR / f"{label}.jpg")
 
     return (
@@ -453,7 +507,7 @@ def save_reference(
         "label": clean_label,
         "name": name.strip(),
         "prompt": prompt.strip(),
-        "image": image_path or "",
+        "image": to_db_relative_path(image_path),
     }
     save_json(IMAGES_JSON_PATH, images)
     all_labels = get_reference_choices()
@@ -496,8 +550,8 @@ def select_style(
     image_path: str | None = None
     if isinstance(style_images, dict) and target_ref_label:
         candidate = style_images.get(target_ref_label)
-        if candidate and Path(candidate).is_file():
-            image_path = candidate
+        if candidate:
+            image_path = resolve_db_path(candidate)
 
     return (
         style.get("name", ""),
@@ -533,8 +587,8 @@ def change_target_reference(
     style_images = style.get("images", {})
     if isinstance(style_images, dict):
         candidate = style_images.get(target_ref_label)
-        if candidate and Path(candidate).is_file():
-            return candidate
+        if candidate:
+            return resolve_db_path(candidate)
 
     return None
 
@@ -623,7 +677,7 @@ def run_style(
         current_images = styles[clean_style_label].get("images", {})
         if not isinstance(current_images, dict):
             current_images = {}
-        current_images[clean_target_ref] = str(output_path)
+        current_images[clean_target_ref] = to_db_relative_path(output_path)
         styles[clean_style_label]["images"] = current_images
         save_json(STYLES_JSON_PATH, styles)
 
@@ -707,8 +761,7 @@ def build_app() -> gr.Blocks:
         if (isinstance(default_ref_images, list) and default_ref_images)
         else default_ref_data.get("image")
     )
-    if not default_ref_image or not Path(default_ref_image).is_file():
-        default_ref_image = None
+    default_ref_image = resolve_db_path(default_ref_image)
 
     default_style_key = style_choices[0] if style_choices else None
     default_style_data = (
@@ -720,8 +773,7 @@ def build_app() -> gr.Blocks:
         if isinstance(default_style_images, dict) and default_ref_key
         else None
     )
-    if not default_style_image or not Path(default_style_image).is_file():
-        default_style_image = None
+    default_style_image = resolve_db_path(default_style_image)
 
     with gr.Blocks(title="Art Style Studio") as demo:
         gr.Markdown("# Art Style Studio")
