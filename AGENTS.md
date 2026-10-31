@@ -28,3 +28,10 @@ This codebase is a personal project, not intended for deployment or production, 
 - do not consider existing code to be right, as you will be expected to correct and fix flawed implementations, or simply refactor code, often;
 - do not update project version unless explicitly requested by the user.
 
+## Language
+
+- code & docstrings: english,
+- conversation: english,
+- user doc (eventual): french,
+- UI: french (and english if language is parametrizable).
+
