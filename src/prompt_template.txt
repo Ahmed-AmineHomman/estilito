@@ -1,0 +1,1 @@
+{concept}. Art style: {style}. {instructions}
