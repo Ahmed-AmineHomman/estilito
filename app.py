@@ -23,12 +23,13 @@ import gradio as gr
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 # File and directory paths
+DATABASE_DIR: Path = Path("database")
 DEFAULT_STYLE_PATH: Path = Path("src/default_style.txt")
 PROMPT_TEMPLATE_PATH: Path = Path("src/prompt_template.txt")
-IMAGES_JSON_PATH: Path = Path("database/images.json")
-STYLES_JSON_PATH: Path = Path("database/styles.json")
-REFERENCES_DIR: Path = Path("database/references")
-STYLES_DIR: Path = Path("database/styles")
+IMAGES_JSON_PATH: Path = DATABASE_DIR / "images.json"
+STYLES_JSON_PATH: Path = DATABASE_DIR / "styles.json"
+REFERENCES_DIR: Path = DATABASE_DIR / "references"
+STYLES_DIR: Path = DATABASE_DIR / "styles"
 
 DEFAULT_PROMPT_TEMPLATE: str = (
     "{concept}. Art style: {style}. {instructions}"
