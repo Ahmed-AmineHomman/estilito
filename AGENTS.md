@@ -5,7 +5,7 @@ This repo implements a very simple and lightweight python gradio app to edit & m
 ## Layout
 
 - `./src/`: core logic & package;
-- `database`: app assets (typically prompts & corresponding cover for art styles);
+- `./database/`: app assets (typically prompts & corresponding cover for art styles; not version controlled);
 - `./app.py`: main GUI entrypoint;
 - `./.venv/`: python venv;
 - `./.env`: env file (contains API key, **never look at it nor edit it**).
